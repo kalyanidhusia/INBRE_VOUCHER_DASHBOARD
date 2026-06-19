@@ -1,0 +1,24 @@
+
+raw_data/
+*.csv
+# R artifacts
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# renv local library (not needed in repo — lockfile is enough)
+renv/library/
+renv/staging/
+
+# shinyapps.io deploy cache
+rsconnect/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Sensitive data overrides (lab members upload via the UI; don't commit real exports)
+# To allow the placeholder defaults, raw_data/*.csv IS tracked.
+# If you add a real export, name it differently or add it here:
+# raw_data/real_*.csv
