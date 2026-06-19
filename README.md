@@ -58,4 +58,4 @@ Because the application file and report file do not share a single common ID cod
 
 ## Contact
 
-for any queries or suggestion, please reach out to [KDhusia@uams.edu](KDhusia@uams.edu)
+For any queries or suggestions, please reach out to [KDhusia@uams.edu](mailto:KDhusia@uams.edu)
