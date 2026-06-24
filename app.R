@@ -124,8 +124,8 @@ triangulate_apps_reports <- function(apps, reps) {
       app_title = normalize_whitespace(project_title),
       app_name_clean = normalize_name(name),
       app_title_clean = normalize_title(project_title),
-      app_year = extract_year_safe(due_date),
-      app_budget_year = assign_budget_year_safe(due_date),
+      app_year = extract_year_safe(date_samples),
+      app_budget_year = assign_budget_year_safe(date_samples),
       institution_clean = normalize_whitespace(home_institution),
       voucher_label = dplyr::case_when(
         as.character(voucher_type) == "1" ~ "Student Research Voucher ($750)",
@@ -362,33 +362,58 @@ ui <- page_navbar(
 
   # ── TAB 2: PUBLICATIONS ─────────────────────────────────────
   nav_panel("📄 Publications",
-    layout_sidebar(
-      sidebar = sidebar(width=260,
-        h6("PubMed Auto-Pull"),
-        tags$p(paste0("Grant: ", GRANT_NUMBER), class="text-muted small"),
-        textInput("extra_pi","Additional PI names (optional)",
-                  placeholder='"Smith J"[au] OR "Jones A"[au]'),
-        actionButton("btn_pull","🔄 Pull from PubMed",class="btn-primary w-100 mb-1"),
-        uiOutput("pull_status"),
-        hr(),
-        h6("Manual Entry"),
-        actionButton("btn_add_pub","➕ Add Publication",class="btn-outline-success w-100 mb-2"),
-        fileInput("ul_pubs","Or upload CSV",accept=".csv"),
-        hr(),
-        h6("Filter"),
-        selectInput("f_status","Compliance",
-                    c("All","✅ Compliant","🔵 In Process","🔴 Action Required")),
-        selectInput("f_year","Year","All"),
-        hr(),
-        downloadButton("dl_pubs_csv","Download CSV",class="btn-sm btn-outline-secondary w-100 mb-1"),
-        downloadButton("dl_rppr_b1_txt","RPPR B.1 (.txt)",class="btn-sm btn-outline-primary w-100"),
-        hr(),
-        h6("Publication Alert Emails"),
-        actionButton("btn_gen_alerts","📧 Draft Monthly Alerts",class="btn-sm btn-outline-warning w-100"),
-        downloadButton("dl_alert_emails","Download Drafts (.txt)",class="btn-sm btn-outline-secondary w-100 mt-1")
+    navset_tab(
+      nav_panel("All Publications",
+        layout_sidebar(
+          sidebar = sidebar(width=260,
+            h6("PubMed Auto-Pull"),
+            tags$p(paste0("Grant: ", GRANT_NUMBER), class="text-muted small"),
+            textInput("extra_pi","Additional PI names (optional)",
+                      placeholder='"Smith J"[au] OR "Jones A"[au]'),
+            actionButton("btn_pull","🔄 Pull from PubMed",class="btn-primary w-100 mb-1"),
+            uiOutput("pull_status"),
+            hr(),
+            h6("Manual Entry"),
+            actionButton("btn_add_pub","➕ Add Publication",class="btn-outline-success w-100 mb-2"),
+            fileInput("ul_pubs","Or upload CSV",accept=".csv"),
+            hr(),
+            h6("Filter"),
+            selectInput("f_status","Compliance",
+                        c("All","✅ Compliant","🔵 In Process","🔴 Action Required")),
+            selectInput("f_year","Year","All"),
+            hr(),
+            downloadButton("dl_pubs_csv","Download CSV",class="btn-sm btn-outline-secondary w-100 mb-1"),
+            downloadButton("dl_rppr_b1_txt","RPPR B.1 (.txt)",class="btn-sm btn-outline-primary w-100"),
+            hr(),
+            h6("Publication Alert Emails"),
+            actionButton("btn_gen_alerts","📧 Draft Monthly Alerts",class="btn-sm btn-outline-warning w-100"),
+            downloadButton("dl_alert_emails","Download Drafts (.txt)",class="btn-sm btn-outline-secondary w-100 mt-1")
+          ),
+          card(full_screen=TRUE, card_header("Publications — P20GM103429"),
+               DTOutput("pubs_table"))
+        )
       ),
-      card(card_header("Publications — P20GM103429"),
-           DTOutput("pubs_table", height="600px"))
+      nav_panel("🔴 Compliance Resolution",
+        layout_columns(fill=FALSE,
+          value_box("Need PMC Deposit",       textOutput("vb_need_pmcid"),
+                    showcase=icon("circle-exclamation"), theme="danger"),
+          value_box("Resolved This Session",  textOutput("vb_session_resolved"),
+                    showcase=icon("circle-check"), theme="success"),
+          value_box("Linked to INBRE Voucher",textOutput("vb_linked_pubs"),
+                    showcase=icon("link"), theme="info")
+        ),
+        br(),
+        card(full_screen=TRUE,
+          card_header(
+            "Non-Compliant Publications — click any row then use the panel below",
+            downloadButton("dl_noncompliant_csv","Download List (.csv)",
+                           class="btn-sm btn-outline-secondary float-end")
+          ),
+          DTOutput("noncompliant_table")
+        ),
+        br(),
+        uiOutput("resolution_panel_ui")
+      )
     )
   ),
 
@@ -402,8 +427,8 @@ ui <- page_navbar(
         downloadButton("dl_pres_tmpl","Download Template",class="btn-sm btn-outline-secondary w-100 mb-1"),
         downloadButton("dl_pres","Download Log",class="btn-sm btn-outline-secondary w-100")
       ),
-      card(card_header("Poster & Presentation Log"),
-           DTOutput("pres_table",height="600px"))
+      card(full_screen=TRUE,card_header("Poster & Presentation Log"),
+           DTOutput("pres_table"))
     )
   ),
 
@@ -411,8 +436,8 @@ ui <- page_navbar(
   nav_panel("🏆 Grant Pipeline",
     navset_tab(
       nav_panel("Historical Vouchers",
-        card(card_header("All 11 Years — 309 Vouchers (2015-2026)"),
-             DTOutput("hist_table",height="560px")),
+        card(full_screen=TRUE,card_header("All 11 Years — 309 Vouchers (2015-2026)"),
+             DTOutput("hist_table")),
         layout_columns(fill=FALSE,
           downloadButton("dl_hist","Download All Historical (.csv)",
                          class="btn-sm btn-outline-secondary"),
@@ -434,8 +459,8 @@ ui <- page_navbar(
             hr(),
             downloadButton("dl_pipeline","Download CSV",class="btn-sm btn-outline-secondary w-100")
           ),
-          card(card_header("Current Cycle Pipeline"),
-               DTOutput("pipeline_table",height="560px"))
+          card(full_screen=TRUE,card_header("Current Cycle Pipeline"),
+               DTOutput("pipeline_table"))
         )
       ),
       nav_panel("Table 1A / 1B Preview",
@@ -454,35 +479,47 @@ ui <- page_navbar(
     navset_tab(
       nav_panel("Core Use (Table 4)",
         layout_sidebar(
-          sidebar = sidebar(width=240,
-            selectInput("t4_core","Core Facility",c("All",CORE_NAMES)),
-            selectInput("t4_year","Budget Year",c("All")),
+          sidebar = sidebar(width = 240,
+            selectInput("t4_core", "Core Facility", c("All", CORE_NAMES)),
+            selectInput("t4_year", "Budget Year", c("All")),
             hr(),
-            actionButton("btn_add_core","➕ Add Core Use Entry",class="btn-primary w-100 mb-2"),
-            fileInput("ul_core","Upload CSV",accept=".csv"),
+            actionButton("btn_add_core", "➕ Add Core Use Entry", class = "btn-primary w-100 mb-2"),
+            fileInput("ul_core", "Upload CSV", accept = ".csv"),
             hr(),
-            downloadButton("dl_core","Download Table 4 (.csv)",class="btn-sm btn-outline-secondary w-100"),
-            downloadButton("dl_core_xlsx","Export Table 4 (.xlsx)",class="btn-sm btn-outline-primary w-100 mt-1")
+            downloadButton("dl_core", "Download Table 4 (.csv)", class = "btn-sm btn-outline-secondary w-100"),
+            downloadButton("dl_core_xlsx", "Export Table 4 (.xlsx)", class = "btn-sm btn-outline-primary w-100 mt-1")
           ),
-          card(
-            card_header("Core Demand and Matched Reporting"),
-            plotlyOutput("core_impact_chart", height="320px"),
+          tagList(
+            card(
+              full_screen = TRUE,
+              card_header("Core Demand — Applications by Facility (from PID 1239)"),
+              plotlyOutput("core_demand_chart", height = "520px")
+            ),
             br(),
-            DTOutput("core_table",height="560px")
+            card(
+              full_screen = TRUE,
+              card_header("Core Facility Use Log — NIGMS Table 4"),
+              uiOutput("core_table_help"),
+              DTOutput("core_table")
+            )
           )
         )
       ),
       nav_panel("Education & Outreach (Table 3)",
         layout_sidebar(
-          sidebar = sidebar(width=240,
-            actionButton("btn_add_out","➕ Add Activity",class="btn-primary w-100 mb-2"),
-            fileInput("ul_out","Upload CSV",accept=".csv"),
+          sidebar = sidebar(width = 240,
+            actionButton("btn_add_out", "➕ Add Activity", class = "btn-primary w-100 mb-2"),
+            fileInput("ul_out", "Upload CSV", accept = ".csv"),
             hr(),
-            downloadButton("dl_out","Download Table 3 (.csv)",class="btn-sm btn-outline-secondary w-100"),
-            downloadButton("dl_out_xlsx","Export Table 3 (.xlsx)",class="btn-sm btn-outline-primary w-100 mt-1")
+            downloadButton("dl_out", "Download Table 3 (.csv)", class = "btn-sm btn-outline-secondary w-100"),
+            downloadButton("dl_out_xlsx", "Export Table 3 (.xlsx)", class = "btn-sm btn-outline-primary w-100 mt-1")
           ),
-          card(card_header("Education & Outreach Activity Log — NIGMS Table 3"),
-               DTOutput("out_table",height="560px"))
+          card(
+            full_screen = TRUE,
+            card_header("Education & Outreach Activity Log — NIGMS Table 3"),
+            uiOutput("out_table_help"),
+            DTOutput("out_table")
+          )
         )
       )
     )
@@ -499,8 +536,8 @@ ui <- page_navbar(
             hr(),
             downloadButton("dl_roster","Download Roster (.csv)",class="btn-sm btn-outline-secondary w-100")
           ),
-          card(card_header("PI & Network Personnel Roster"),
-               DTOutput("roster_table",height="560px"))
+          card(full_screen=TRUE,card_header("PI & Network Personnel Roster"),
+               DTOutput("roster_table"))
         )
       ),
       nav_panel("EAC Meeting Log",
@@ -510,8 +547,8 @@ ui <- page_navbar(
             hr(),
             downloadButton("dl_eac","Download Log (.csv)",class="btn-sm btn-outline-secondary w-100")
           ),
-          card(card_header("External Advisory Committee Meeting Log"),
-               DTOutput("eac_table",height="560px"))
+          card(full_screen=TRUE,card_header("External Advisory Committee Meeting Log"),
+               DTOutput("eac_table"))
         )
       ),
       nav_panel("DMS Plan Tracker",
@@ -522,8 +559,8 @@ ui <- page_navbar(
             hr(),
             downloadButton("dl_dms","Download (.csv)",class="btn-sm btn-outline-secondary w-100")
           ),
-          card(card_header("Data Management & Sharing Plan Tracker"),
-               DTOutput("dms_table",height="560px"))
+          card(full_screen=TRUE,card_header("Data Management & Sharing Plan Tracker"),
+               DTOutput("dms_table"))
         )
       ),
       nav_panel("RRID Registry",
@@ -535,7 +572,7 @@ ui <- page_navbar(
             downloadButton("dl_rrid","Download Registry (.csv)",class="btn-sm btn-outline-secondary w-100")
           ),
           card(card_header("Core Facility RRID Registry"),
-               DTOutput("rrid_table",height="300px")),
+               DTOutput("rrid_table")),
           br(),
           card(
             card_header("Acknowledgment Text Checker"),
@@ -622,24 +659,6 @@ server <- function(input, output, session) {
     }, error = function(e) tibble())
   })
 
-  core_outcomes_summary_data <- reactive({
-    f <- "cleaned/core_outcomes_summary.csv"
-    if (!file.exists(f)) return(tibble())
-    tryCatch(
-      readr::read_csv(f, show_col_types = FALSE),
-      error = function(e) tibble()
-    )
-  })
-
-  core_requests_with_outcomes_data <- reactive({
-    f <- "cleaned/core_requests_with_outcomes.csv"
-    if (!file.exists(f)) return(tibble())
-    tryCatch(
-      readr::read_csv(f, show_col_types = FALSE),
-      error = function(e) tibble()
-    )
-  })
-
   reports_data <- reactive({
     tryCatch({
       df <- read_first_existing_csv(c("raw_data/reports.csv", "reports.csv"))
@@ -653,6 +672,8 @@ server <- function(input, output, session) {
   })
 
   # ── Reactive stores ───────────────────────────────────────
+  pmcid_updates <- reactiveVal(tibble(pmid=character(),new_pmcid=character(),
+                                      notes=character(),date_resolved=character()))
   pubmed_rv     <- reactiveVal(empty_pubs())
   pub_status    <- reactiveVal("Not yet pulled.")
   manual_pubs   <- reactiveVal(empty_pubs())
@@ -688,18 +709,40 @@ server <- function(input, output, session) {
   })
 
   # ── Historical charts ─────────────────────────────────────
+  # output$hist_trend <- renderPlotly({
+  #   df <- hist_vouchers()
+  #   if (nrow(df) == 0) return(plotly_empty())
+  #   d <- df %>% group_by(budget_year) %>%
+  #     summarise(total=sum(amount,na.rm=TRUE), n=n(), .groups="drop")
+  #   p <- ggplot(d, aes(x=budget_year, y=total, group=1)) +
+  #     geom_col(fill="#4472c4", width=0.65) +
+  #     #geom_text(aes(label=paste0("n=",n)), vjust=-0.6, size=5) +
+  #     geom_text(aes(label = n), vjust = -0.6, size = 5, nudge_y = 2) +
+  #     scale_y_continuous(labels=function(x) paste0("$",round(x/1000),"K")) +
+  #     labs(x="Budget Year", y="Total Awarded") +
+  #     theme_minimal(base_size=11) +
+  #     theme(axis.text.x=element_text(angle=35, hjust=1))
+  #   ggplotly(p) %>% plotly::config(displayModeBar=FALSE)
+  # })
   output$hist_trend <- renderPlotly({
     df <- hist_vouchers()
     if (nrow(df) == 0) return(plotly_empty())
+    
     d <- df %>% group_by(budget_year) %>%
       summarise(total=sum(amount,na.rm=TRUE), n=n(), .groups="drop")
+    
+    # Calculate a dynamic nudge based on 3% of the highest bar
+    nudge_val <- max(d$total, na.rm = TRUE) * 0.03
+    
     p <- ggplot(d, aes(x=budget_year, y=total, group=1)) +
       geom_col(fill="#4472c4", width=0.65) +
-      geom_text(aes(label=paste0("n=",n)), vjust=-0.4, size=3) +
-      scale_y_continuous(labels=scales::dollar_format()) +
+      # Use nudge_val and remove vjust for perfect Plotly rendering
+      geom_text(aes(label = paste0(" ", n)), nudge_y = nudge_val, size = 4) +
+      scale_y_continuous(labels=function(x) paste0("$",round(x/1000),"K")) +
       labs(x="Budget Year", y="Total Awarded") +
       theme_minimal(base_size=11) +
       theme(axis.text.x=element_text(angle=35, hjust=1))
+      
     ggplotly(p) %>% plotly::config(displayModeBar=FALSE)
   })
 
@@ -723,7 +766,7 @@ server <- function(input, output, session) {
       arrange(n)
     p <- ggplot(d, aes(x=reorder(institution,n), y=n, fill=n)) +
       geom_bar(stat="identity", width=0.7) +
-      coord_flip() + scale_fill_viridis_c(option="plasma") +
+      coord_flip() + scale_fill_gradient(low="#fee8c8", high="#c2452d") +
       labs(x="",y="Total Vouchers") +
       theme_minimal(base_size=11) + theme(legend.position="none")
     ggplotly(p) %>% plotly::config(displayModeBar=FALSE)
@@ -758,22 +801,288 @@ server <- function(input, output, session) {
     ggplotly(p) %>% plotly::config(displayModeBar = FALSE)
   })
 
+  # ── Core Demand Chart (from PID 1239 checkbox columns) ──────
+  core_demand_data <- reactive({
+    apps <- apps_data()
+    if (nrow(apps) == 0) return(tibble())
+
+    core_map <- c(
+      "core_requested___1"  = "Biodosimetry Diagnostic",
+      "core_requested___2"  = "Digital & Electron Microscopy",
+      "core_requested___3"  = "Flow Cytometry",
+      "core_requested___4"  = "Proteomics Core",
+      "core_requested___5"  = "DNA Sequencing",
+      "core_requested___6"  = "Genomics Core",
+      "core_requested___7"  = "DNA Damage & Toxicology",
+      "core_requested___8"  = "Experimental Pathology",
+      "core_requested___9"  = "Skeletal Phenotyping",
+      "core_requested___10" = "Tissue Procurement",
+      "core_requested___11" = "Vascular Biorepository",
+      "core_requested___12" = "Brain Imaging Research",
+      "core_requested___13" = "Center for Imaging Research",
+      "core_requested___14" = "Bioinformatics Core",
+      "core_requested___15" = "Metabolism Core",
+      "core_requested___16" = "Behavioral Core",
+      "core_requested___17" = "Statewide Mass Spectrometry",
+      "core_requested___18" = "Nuclear Magnetic Resonance",
+      "core_requested___19" = "X-Ray Crystallography",
+      "core_requested___20" = "High-Throughput Screening",
+      "core_requested___21" = "UAMS Library Sci Comm",
+      "core_requested___22" = "Other Specialized Core"
+    )
+
+    purrr::map_dfr(names(core_map), function(col) {
+      n <- if (col %in% colnames(apps)) {
+        sum(apps[[col]] == "1" | tolower(as.character(apps[[col]])) == "checked", na.rm = TRUE)
+      } else 0L
+
+      tibble(
+        core_name = core_map[[col]],
+        n_apps = as.integer(n)
+      )
+    }) %>%
+      filter(n_apps > 0) %>%
+      arrange(desc(n_apps)) %>%
+      mutate(
+        core_name = stringr::str_wrap(core_name, width = 28)
+      )
+  })
+
+  output$core_demand_chart <- renderPlotly({
+    tryCatch({
+      df <- core_demand_data()
+
+      if (nrow(df) == 0) {
+        return(
+          plotly_empty() %>%
+            layout(
+              title = list(
+                text = "Load PID 1239 applications to see core demand",
+                font = list(size = 14)
+              )
+            )
+        )
+      }
+
+      p <- ggplot(df, aes(x = n_apps, y = reorder(core_name, n_apps))) +
+        geom_col(fill = "#2c6fad", width = 0.68) +
+        geom_text(
+          aes(label = n_apps),
+          hjust = -0.30,
+          size = 4.4,
+          fontface = "bold",
+          color = "#1f4e79"
+        ) +
+        scale_x_continuous(
+          expand = expansion(mult = c(0, 0.18)),
+          breaks = scales::pretty_breaks(n = 6)
+        ) +
+        labs(
+          x = "Applications requesting this core",
+          y = NULL
+        ) +
+        theme_minimal(base_size = 13) +
+        theme(
+          panel.grid.major.y = element_blank(),
+          panel.grid.minor = element_blank(),
+          panel.grid.major.x = element_line(color = "#d9dee7", linewidth = 0.45),
+          axis.text.y = element_text(size = 12, face = "bold", color = "#1f1f1f", lineheight = 0.95),
+          axis.text.x = element_text(size = 11, color = "#404040"),
+          axis.title.x = element_text(size = 12, face = "bold"),
+          plot.margin = margin(12, 55, 12, 12)
+        )
+
+      ggplotly(p, tooltip = c("y", "x")) %>%
+        plotly::config(displayModeBar = FALSE) %>%
+        layout(
+          margin = list(l = 210, r = 70, t = 20, b = 50)
+        )
+    }, error = function(e) {
+      plotly_empty()
+    })
+  })
+
+  # ── Compliance Resolution Workflow ───────────────────────────
+  # Link publications to voucher awardees by last-name matching
+  noncompliant_linked <- reactive({
+    df <- all_pubs() %>% filter(compliance=="non_compliant", !flagged)
+    if (nrow(df) == 0) return(df %>%
+      mutate(linked_awardee="", linked_cycle="", pmid_url=""))
+    apps   <- apps_data()
+    hist_v <- hist_vouchers()
+    known  <- unique(c(apps$name %||% character(0),
+                       hist_v$applicant %||% character(0))) %>%
+              na.omit() %>% .[nchar(.) >= 3]
+    df %>% rowwise() %>% mutate(
+      linked_awardee = {
+        found <- ""
+        for (pi in known) {
+          last <- trimws(sub("\\s.*","", pi))
+          if (nchar(last) >= 3 &&
+              stringr::str_detect(authors, stringr::regex(last, ignore_case=TRUE))) {
+            found <- pi; break
+          }
+        }
+        found
+      },
+      linked_cycle = if_else(nchar(linked_awardee) > 0, {
+        cy <- apps %>%
+          filter(stringr::str_detect(tolower(name), tolower(stringr::str_extract(linked_awardee,"^\\S+")))) %>%
+          pull(date_samples) %>% dplyr::first() %||% ""
+        assign_budget_year_safe(cy)
+      }, ""),
+      pmid_url = if_else(nchar(trimws(pmid)) > 0,
+        paste0("https://pubmed.ncbi.nlm.nih.gov/", trimws(pmid), "/"), "")
+    ) %>% ungroup()
+  })
+
+  output$vb_need_pmcid      <- renderText(nrow(noncompliant_linked()))
+  output$vb_session_resolved <- renderText(nrow(pmcid_updates()))
+  output$vb_linked_pubs      <- renderText(
+    sum(nchar(noncompliant_linked()$linked_awardee) > 0, na.rm=TRUE))
+
+  output$noncompliant_table <- renderDT({
+    df <- noncompliant_linked()
+    if (nrow(df) == 0) return(datatable(tibble(Status="✅ No non-compliant publications found.")))
+    display <- df %>%
+      mutate(
+        PubMed = if_else(nchar(pmid_url)>0,
+          paste0('<a href="',pmid_url,'" target="_blank">',pmid,'</a>'), pmid)
+      ) %>%
+      select(Year=pub_year, Authors=authors, Title=title, Journal=journal,
+             PubMed, `Linked Awardee`=linked_awardee, `Cycle`=linked_cycle)
+    datatable(display,
+      escape    = FALSE,
+      selection = "single",
+      options   = list(pageLength=15, scrollX=TRUE, dom="Blfrtip",
+                       scrollY="400px", scrollCollapse=TRUE),
+      filter    = "top", rownames = FALSE) %>%
+      formatStyle(1:7, fontSize="13px")
+  })
+
+  selected_paper <- reactiveVal(NULL)
+  observeEvent(input$noncompliant_table_rows_selected, {
+    idx <- input$noncompliant_table_rows_selected
+    df  <- noncompliant_linked()
+    if (length(idx) > 0 && idx <= nrow(df)) selected_paper(df[idx, ])
+    else selected_paper(NULL)
+  })
+
+  output$resolution_panel_ui <- renderUI({
+    paper <- selected_paper()
+    if (is.null(paper)) {
+      return(card(class="border-secondary",
+        card_header("Resolution Panel"),
+        tags$p("👆 Click a row in the table above to resolve a paper.",
+               class="text-muted p-3")))
+    }
+    card(class="border-danger",
+      card_header(
+        tags$span("🔴 Resolving: ", tags$b(paper$title)),
+        class="bg-danger-subtle"
+      ),
+      layout_columns(
+        div(
+          tags$p(tags$b("Authors: "),   paper$authors,   class="mb-1 small"),
+          tags$p(tags$b("Journal: "),   paper$journal,   class="mb-1 small"),
+          tags$p(tags$b("Year: "),      paper$pub_year,  class="mb-1 small"),
+          tags$p(tags$b("PMID: "),      paper$pmid,      class="mb-1 small"),
+          if (nchar(paper$linked_awardee) > 0)
+            tags$p(tags$b("Linked Awardee: "), paper$linked_awardee,
+                   " | Cycle: ", paper$linked_cycle, class="mb-1 small text-success")
+          else
+            tags$p("No voucher awardee match found.", class="mb-1 small text-muted")
+        ),
+        div(
+          tags$p(tags$b("Enter PMCID to mark as resolved:"), class="mb-1"),
+          textInput("resolve_pmcid_input", NULL,
+                    placeholder="PMC1234567",
+                    value = ""),
+          textInput("resolve_notes_input", NULL,
+                    placeholder="Optional notes (e.g. 'confirmed with PI')"),
+          layout_columns(fill=FALSE,
+            actionButton("btn_save_resolution", "✅ Mark Resolved",
+                         class="btn-success w-100"),
+            actionButton("btn_draft_outreach",  "📧 Draft Email",
+                         class="btn-outline-primary w-100"),
+            actionButton("btn_flag_na",         "⚫ Flag as N/A",
+                         class="btn-outline-secondary w-100")
+          )
+        )
+      )
+    )
+  })
+
+  observeEvent(input$btn_save_resolution, {
+    paper <- selected_paper()
+    req(!is.null(paper), nchar(trimws(input$resolve_pmcid_input)) > 0)
+    new_entry <- tibble(
+      pmid         = trimws(paper$pmid),
+      new_pmcid    = trimws(input$resolve_pmcid_input),
+      notes        = trimws(input$resolve_notes_input),
+      date_resolved = as.character(Sys.Date())
+    )
+    # Remove any existing update for this PMID first, then add new
+    existing <- pmcid_updates() %>% filter(pmid != trimws(paper$pmid))
+    pmcid_updates(bind_rows(existing, new_entry))
+    selected_paper(NULL)
+    showNotification(paste0("✅ Resolved: PMCID ", new_entry$new_pmcid,
+                            " saved. Compliance status updated."), type="message", duration=5)
+  })
+
+  observeEvent(input$btn_draft_outreach, {
+    paper <- selected_paper()
+    req(!is.null(paper))
+    email_text <- paste0(
+      "SUBJECT: Action Required — PMC Deposit for Your INBRE-Funded Publication\n\n",
+      "Dear ", paper$authors, ",\n\n",
+      "During our AR INBRE (P20GM103429) compliance review, we found the following ",
+      "publication has not yet been deposited in PubMed Central:\n\n",
+      "  Title:   ", paper$title, "\n",
+      "  Journal: ", paper$journal, " (", paper$pub_year, ")\n",
+      if (nchar(paper$pmid) > 0) paste0("  PubMed:  https://pubmed.ncbi.nlm.nih.gov/", paper$pmid, "/\n") else "",
+      "\nPer NIH policy, all publications funded by INBRE must be deposited in PMC ",
+      "at no charge by uploading your author-accepted manuscript:\n",
+      "  https://www.ncbi.nlm.nih.gov/pmc/about/submission-methods/\n\n",
+      "Once submitted, please reply with the PMCID so we can update our records.\n\n",
+      "Thank you,\nAR INBRE Program | UAMS\n", strrep("-", 60)
+    )
+    showModal(modalDialog(
+      title = "📧 Draft Email — Copy and Send",
+      size  = "l", easyClose = TRUE,
+      tags$p(tags$b("To: "), paper$authors, class="small"),
+      tags$hr(),
+      tags$pre(style="font-size:12px;white-space:pre-wrap;background:#f8f9fa;padding:12px;border-radius:6px;",
+               email_text),
+      footer = tagList(
+        tags$small("Copy the text above and send via your email client.", class="text-muted"),
+        modalButton("Close")
+      )
+    ))
+  })
+
+  observeEvent(input$btn_flag_na, {
+    paper <- selected_paper()
+    req(!is.null(paper))
+    new_entry <- tibble(pmid=trimws(paper$pmid), new_pmcid="N/A",
+                        notes="Flagged as not applicable", date_resolved=as.character(Sys.Date()))
+    existing  <- pmcid_updates() %>% filter(pmid != trimws(paper$pmid))
+    pmcid_updates(bind_rows(existing, new_entry))
+    selected_paper(NULL)
+    showNotification("⚫ Paper flagged as N/A and removed from Action Required list.",
+                     type="warning", duration=4)
+  })
+
+  output$dl_noncompliant_csv <- downloadHandler(
+    filename = function() paste0("noncompliant_pubs_", Sys.Date(), ".csv"),
+    content  = function(f) write_csv(noncompliant_linked() %>%
+                                       select(-pmid_url), f)
+  )
+
   # ── Value boxes ───────────────────────────────────────────
-  output$vb_pubs  <- renderText({
-    df <- linked_reports()
-    if (nrow(df) == 0) return("0")
-    as.character(sum(df$has_presentation, na.rm = TRUE) + sum(df$has_manuscript, na.rm = TRUE) + sum(df$has_grant, na.rm = TRUE))
-  })
-  output$vb_green <- renderText({
-    df <- linked_reports()
-    if (nrow(df) == 0) return("0")
-    as.character(sum(df$confidence_tier == "High Confidence", na.rm = TRUE))
-  })
-  output$vb_red   <- renderText({
-    df <- linked_reports()
-    if (nrow(df) == 0) return("0")
-    as.character(sum(df$confidence_tier != "High Confidence", na.rm = TRUE))
-  })
+  output$vb_pubs  <- renderText(nrow(all_pubs()))
+  output$vb_green <- renderText(sum(all_pubs()$compliance=="compliant",    na.rm=TRUE))
+  output$vb_red   <- renderText(sum(all_pubs()$compliance=="non_compliant",na.rm=TRUE))
   output$vb_hist  <- renderText(nrow(hist_vouchers()))
 
   # ── Publications ──────────────────────────────────────────
@@ -832,6 +1141,14 @@ server <- function(input, output, session) {
   all_pubs <- reactive({
     combined <- bind_rows(pubmed_rv(), manual_pubs())
     if (nrow(combined)==0) return(combined)
+    # Apply any manual PMCID resolutions entered in the Compliance Resolution tab
+    updates <- pmcid_updates()
+    if (nrow(updates) > 0) {
+      combined <- combined %>%
+        left_join(updates %>% select(pmid, new_pmcid), by="pmid") %>%
+        mutate(pmcid = if_else(!is.na(new_pmcid) & nchar(new_pmcid)>0, new_pmcid, pmcid)) %>%
+        select(-new_pmcid)
+    }
     combined %>%
       arrange(desc(source=="Manual Entry")) %>%
       distinct(title, .keep_all=TRUE) %>%
@@ -1072,115 +1389,68 @@ server <- function(input, output, session) {
       contributed_course=input$cu_c,contributed_pub=input$cu_p,notes=trimws(input$cu_notes))))
     removeModal(); showNotification("Saved.",type="message")
   })
-  core_detail_filtered <- reactive({
-    df <- core_requests_with_outcomes_data()
-    if (nrow(df) == 0) return(df)
-
-    if (!is.null(input$t4_core) && input$t4_core != "All") {
-      df <- df %>% filter(core_name == input$t4_core)
-    }
-    if (!is.null(input$t4_year) && input$t4_year != "All") {
-      df <- df %>% filter(budget_year == input$t4_year)
-    }
+  core_filtered <- reactive({
+    df <- core_rv()
+    if (nrow(df)==0) return(df)
+    if (!is.null(input$t4_core) && input$t4_core!="All") df <- df %>% filter(core_name==input$t4_core)
+    if (!is.null(input$t4_year) && input$t4_year!="All") df <- df %>% filter(budget_year==input$t4_year)
     df
   })
-
   observe({
-    df <- core_requests_with_outcomes_data()
-    yrs <- if (nrow(df) == 0) character(0) else sort(unique(df$budget_year), decreasing = TRUE)
-    yrs <- yrs[!is.na(yrs) & yrs != ""]
-    updateSelectInput(session, "t4_year", choices = c("All", yrs))
+    yrs <- sort(unique(core_rv()$budget_year),decreasing=TRUE)
+    updateSelectInput(session,"t4_year",choices=c("All",yrs))
   })
-
-  output$core_impact_chart <- renderPlotly({
-    df <- core_outcomes_summary_data()
-    if (nrow(df) == 0) return(plotly_empty())
-
-    plot_df <- df %>%
-      mutate(core_name = forcats::fct_reorder(core_name, n_projects))
-
-    p <- ggplot(plot_df, aes(x = core_name, y = n_projects, fill = n_with_reports)) +
-      geom_col(width = 0.75) +
-      geom_text(aes(label = n_projects), hjust = -0.2, size = 3.2) +
-      coord_flip() +
-      labs(
-        x = "",
-        y = "Projects requesting core",
-        fill = "Matched reports"
-      ) +
-      theme_minimal(base_size = 12) +
-      theme(
-        axis.text.y = element_text(size = 10, face = "bold"),
-        legend.position = "right"
+  output$core_table_help <- renderUI({
+    df <- core_filtered()
+    if (nrow(df) == 0) {
+      return(
+        div(class = "text-muted small p-2",
+          tags$b("No core use entries are currently loaded."),
+          tags$br(),
+          "Use the sidebar to add entries manually or upload a CSV file.",
+          tags$br(),
+          "The chart above reflects PID 1239 application checkbox demand; the table below reflects manually maintained NIGMS Table 4 records."
+        )
       )
+    }
 
-    ggplotly(p) %>% plotly::config(displayModeBar = FALSE)
+    div(class = "text-muted small p-2",
+      "Tip: use filters in the sidebar, column filters in the table, or the full-screen button in the top-right corner for easier review."
+    )
   })
 
   output$core_table <- renderDT({
-    df <- core_detail_filtered()
+    df <- core_filtered()
+
     if (nrow(df) == 0) {
-      return(datatable(tibble(Status = "No cleaned core outcome data found. Run scripts_clean_core_requests.R and scripts_join_core_outcomes.R first.")))
+      return(
+        datatable(
+          tibble(
+            Status = "No core use entries loaded.",
+            Guidance = "Click 'Add Core Use Entry' or upload a CSV from the sidebar."
+          ),
+          options = list(dom = "t"),
+          rownames = FALSE
+        )
+      )
     }
 
-    display_df <- df %>%
-      select(
-        budget_year,
-        institution,
-        awardee_name,
-        voucher_type,
-        project_title,
-        core_name,
-        match_status,
-        has_report,
-        has_presentation,
-        has_manuscript,
-        has_grant
-      ) %>%
-      rename(
-        `Budget Year` = budget_year,
-        `Institution` = institution,
-        `Awardee` = awardee_name,
-        `Voucher Type` = voucher_type,
-        `Project Title` = project_title,
-        `Core Name` = core_name,
-        `Match Status` = match_status,
-        `Has Report` = has_report,
-        `Presentation` = has_presentation,
-        `Manuscript` = has_manuscript,
-        `Grant` = has_grant
-      )
-
     datatable(
-      display_df,
+      df,
       options = list(
         pageLength = 15,
         scrollX = TRUE,
-        scrollY = "480px",
+        scrollY = "520px",
         scrollCollapse = TRUE
       ),
       filter = "top",
       rownames = FALSE
-    ) %>%
-      formatStyle(
-        "Match Status",
-        target = "row",
-        backgroundColor = styleEqual(
-          c("high_confidence", "review", "pending_or_unmatched"),
-          c("#e2f0d9", "#fff2cc", "#fce4d6")
-        )
-      )
+    )
   })
+  output$dl_core      <- downloadHandler(filename=function() paste0("table4_core_",Sys.Date(),".csv"),content=function(f) write_csv(core_rv(),f))
+  output$dl_core_xlsx <- downloadHandler(filename=function() paste0("table4_core_",Sys.Date(),".xlsx"),content=function(f) write_xlsx(list("Table 4 Core Use"=core_rv()),f))
 
-  output$dl_core <- downloadHandler(
-    filename = function() paste0("table4_core_", Sys.Date(), ".csv"),
-    content = function(f) write_csv(core_detail_filtered(), f)
-  )
 
-  output$dl_core_xlsx <- downloadHandler(
-    filename = function() paste0("table4_core_", Sys.Date(), ".xlsx"),
-    content = function(f) write_xlsx(list("Table 4 Core Use" = core_detail_filtered()), f)
-  )
 
   # ── Education & Outreach (Table 3) ────────────────────────
   observeEvent(input$ul_out, { req(input$ul_out)
@@ -1208,10 +1478,50 @@ server <- function(input, output, session) {
       notes=trimws(input$oa_notes))))
     removeModal(); showNotification("Saved.",type="message")
   })
+  output$out_table_help <- renderUI({
+    df <- outreach_rv()
+    if (nrow(df) == 0) {
+      return(
+        div(class = "text-muted small p-2",
+          tags$b("No outreach activities are currently loaded."),
+          tags$br(),
+          "Use the sidebar to add activities manually or upload a CSV file for NIGMS Table 3 tracking."
+        )
+      )
+    }
+
+    div(class = "text-muted small p-2",
+      "Tip: use the full-screen button in the top-right corner when reviewing longer outreach logs."
+    )
+  })
+
   output$out_table <- renderDT({
     df <- outreach_rv()
-    if (nrow(df)==0) return(datatable(tibble(Status="No activities yet. Click ➕ to log.")))
-    datatable(df,options=list(pageLength=15,scrollX=TRUE,scrollY="480px"),filter="top",rownames=FALSE)
+
+    if (nrow(df) == 0) {
+      return(
+        datatable(
+          tibble(
+            Status = "No outreach activities loaded.",
+            Guidance = "Click 'Add Activity' or upload a CSV from the sidebar."
+          ),
+          options = list(dom = "t"),
+          rownames = FALSE
+        )
+      )
+    }
+
+    datatable(
+      df,
+      options = list(
+        pageLength = 15,
+        scrollX = TRUE,
+        scrollY = "520px",
+        scrollCollapse = TRUE
+      ),
+      filter = "top",
+      rownames = FALSE
+    )
   })
   output$dl_out      <- downloadHandler(filename=function() paste0("table3_outreach_",Sys.Date(),".csv"),content=function(f) write_csv(outreach_rv(),f))
   output$dl_out_xlsx <- downloadHandler(filename=function() paste0("table3_outreach_",Sys.Date(),".xlsx"),content=function(f) write_xlsx(list("Table 3 Outreach"=outreach_rv()),f))

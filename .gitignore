@@ -1,3 +1,9 @@
+.rscignore
+app_jun22.R.bak
+renv.lock
+scripts_clean_core_requests.R
+scripts_join_core_outcomes.R
+working_app.R.June22
 
 raw_data/
 *.csv
