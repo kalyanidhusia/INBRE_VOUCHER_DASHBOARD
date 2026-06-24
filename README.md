@@ -1,6 +1,23 @@
 # Arkansas INBRE Voucher Tracker Dashboard
 
-This is a simple web tool to help you see and understand our Arkansas INBRE voucher data without having to look at messy spreadsheets or complicated code. 
+
+The AR INBRE Voucher Dashboard is an internal Shiny-based tracking and reporting system designed to support AR INBRE administration, voucher oversight, NIH compliance, and RPPR-ready reporting.
+
+This dashboard serves as a practical substitute for scattered spreadsheet-based tracking systems by bringing voucher applications, reports, publications, presentations, grant activity, core facility use, outreach activity, personnel tracking, and compliance workflows into one place.
+
+Why this dashboard matters
+
+AR INBRE administrative reporting requires repeated follow-up across many institutions, investigators, mentors, and project cycles. In practice, this often means hunting down PUI investigators and trainees, checking whether reports were submitted, confirming whether outcomes were acknowledged correctly, and pulling the same metrics again and again for NIH progress reporting.
+
+This dashboard reduces that burden by providing:
+
+- a centralized view of voucher activity across years
+- searchable records for applications, reports, and linked outcomes
+- core facility demand and use summaries
+- outreach and education activity tracking
+- publication and compliance monitoring
+- RPPR-oriented export support for NIH reporting
+- a structured system for identifying missing information and following up on time
 
 You can use the live web version right here: [https://kalyanidhusia.shinyapps.io/arinbre-tracker/](https://kalyanidhusia.shinyapps.io/arinbre-tracker/)
 
@@ -29,7 +46,7 @@ This tab shows you the big picture using simple charts and summary cards:
 ### 2. Scientific Impact Data (The Information Tab)
 This tab contains a single, massive full-page spreadsheet table. It lists:
 * Every investigator's name, school, voucher type, and requested budget.
-* Quick indicators (⭐) showing if they produced a presentation, a manuscript, or a grant proposal.
+* Quick indicators showing if they produced a presentation, a manuscript, or a grant proposal.
 * Read-only notes detailing the exact **Scientific Outcomes, Student Mentorship Tracker, and Manuscript Citations / DOIs**.
 * **How to use this table:** You can type any keyword (like an author's name, a school, or a term like "cancer") into the search bars to instantly find matching text for your reports.
 
@@ -58,4 +75,4 @@ Because the application file and report file do not share a single common ID cod
 
 ## Contact
 
-For any queries or suggestions, please reach out to [KDhusia@uams.edu](mailto:KDhusia@uams.edu)
+For questions, updates, or suggestions, please contact Kalyani Dhusia at [KDhusia@uams.edu](mailto:KDhusia@uams.edu)
